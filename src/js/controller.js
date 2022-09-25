@@ -38,6 +38,7 @@ const controlSearchResults = async function () {
     // 1) Get search query
     const query = searchView.getQuery();
     if (!query) return;
+
     resultsView.renderSpinner();
 
     // 2) Load search results
@@ -118,13 +119,34 @@ const controlAddRecipe = async function (newRecipe) {
   }
 };
 
-const deleteRecipe = async function (id) {
+const controlDeleteRecipe = async function (id) {
   try {
+    // Show loading spinner
+    addRecipeView.renderSpinner();
+
+    // delete recipe in API
     await model.deleteRecipe(id);
+
+    // delete Bookmark
+    model.delBookmark(id);
+
+    // update bookmark view
+    bookmarksView.render(model.state.bookmarks);
+
+    // Load search results
+    await model.loadSearchResults(model.state.search.query);
+
+    // Render results
+    resultsView.render(model.getSearchfResultsPage());
+
+    // Render initial pagination buttons
+    paginationView.render(model.state.search);
+
     // Change ID in URL
     window.history.pushState(null, '', `#`);
 
-    resultsView.render(model.getSearchfResultsPage());
+    // Message to user, the user receipe deleted
+    recipeView.renderMessage('Recipe has been deleted!');
   } catch (error) {
     addRecipeView.renderError(error.message);
   }
@@ -138,6 +160,6 @@ const init = function () {
   searchView.addHandlerSearch(controlSearchResults);
   paginationView.addHandlerClick(controlPagination);
   addRecipeView.addHandlerUpload(controlAddRecipe);
-  recipeView.addHandleDeleteRecipe(deleteRecipe);
+  recipeView.addHandleDeleteRecipe(controlDeleteRecipe);
 };
 init();
